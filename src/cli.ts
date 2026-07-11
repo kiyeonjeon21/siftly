@@ -10,7 +10,7 @@
 import { parseArgs } from "node:util";
 import { writeFileSync } from "node:fs";
 
-import { cached } from "./store/cache.ts";
+import { cached, cacheStats, clearCache } from "./store/cache.ts";
 import { fetchStory, fetchTopStories } from "./sources/hackernews.ts";
 import { fetchVideo, NoCaptionsError } from "./sources/youtube.ts";
 import {
@@ -42,6 +42,8 @@ Usage:
   siftly x --news-id <id|url>    A specific news story (+ the posts behind it)
   siftly rss [url] [options]     RSS/Atom feeds (~/.siftly/feeds.txt or a url)
   siftly digest [options]        Several sources at once, one document
+  siftly cache stats             Show cache size / entries per source
+  siftly cache clear [source]    Empty the cache (optionally one source)
 
 Options:
   --sources LIST  digest: comma list of hn,rss,x,news (default hn,rss)
@@ -257,6 +259,22 @@ async function runDigest(flags: Record<string, unknown>) {
   emit(output, flags, count);
 }
 
+function runCache(rest: string[]) {
+  const sub = rest[0];
+  if (sub === "stats") {
+    const s = cacheStats();
+    const lines = [`cache: ${s.rows} entr${s.rows === 1 ? "y" : "ies"}`];
+    if (s.oldest) lines.push(`oldest: ${new Date(s.oldest * 1000).toISOString()}`);
+    for (const [src, n] of Object.entries(s.bySource)) lines.push(`  ${src}: ${n}`);
+    console.log(lines.join("\n"));
+  } else if (sub === "clear") {
+    const n = clearCache(rest[1]);
+    console.error(`siftly: cleared ${n} cache entr${n === 1 ? "y" : "ies"}${rest[1] ? ` for ${rest[1]}` : ""}`);
+  } else {
+    fail("usage: siftly cache <stats | clear [source]>");
+  }
+}
+
 function emit(output: string, flags: Record<string, unknown>, count: number) {
   if (typeof flags.out === "string") {
     writeFileSync(flags.out, output);
@@ -313,6 +331,9 @@ async function main() {
       break;
     case "digest":
       await runDigest(values);
+      break;
+    case "cache":
+      runCache(rest);
       break;
     default:
       fail(`unknown command "${command}"`);

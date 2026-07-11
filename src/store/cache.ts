@@ -84,3 +84,31 @@ export async function cached<T>(
   set(key, source, fresh);
   return fresh;
 }
+
+/** Delete all cached entries, or only those for one source. Returns rows removed. */
+export function clearCache(source?: string): number {
+  const db = connect();
+  const res = source
+    ? db.query("DELETE FROM cache WHERE source = ?").run(source)
+    : db.query("DELETE FROM cache").run();
+  return res.changes;
+}
+
+export interface CacheStats {
+  rows: number;
+  /** Oldest entry's fetched_at (epoch seconds), or null when empty. */
+  oldest: number | null;
+  bySource: Record<string, number>;
+}
+
+export function cacheStats(): CacheStats {
+  const db = connect();
+  const rows = (db.query("SELECT COUNT(*) AS n FROM cache").get() as { n: number }).n;
+  const oldest = (db.query("SELECT MIN(fetched_at) AS m FROM cache").get() as { m: number | null }).m;
+  const bySource: Record<string, number> = {};
+  const grouped = db
+    .query("SELECT source, COUNT(*) AS n FROM cache GROUP BY source")
+    .all() as { source: string; n: number }[];
+  for (const r of grouped) bySource[r.source] = r.n;
+  return { rows, oldest, bySource };
+}
