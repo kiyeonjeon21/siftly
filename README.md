@@ -136,6 +136,7 @@ bun run src/cli.ts yt --channel @handle --list      # titles/links only (no tran
 # X — trending / search / curated news (needs X_BEARER_TOKEN)
 bun run src/cli.ts x                             # trending + top posts per trend
 bun run src/cli.ts x --query "OpenAI" --posts 5 # top recent posts on a topic
+bun run src/cli.ts x --user OpenAI --posts 5    # a specific account's recent posts
 bun run src/cli.ts x --news "AI"                 # curated news stories for a topic
 bun run src/cli.ts x --news-id "https://x.com/i/trending/<id>"  # one story + the posts behind it
 

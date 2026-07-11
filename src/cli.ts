@@ -18,6 +18,7 @@ import {
   fetchNewsStory,
   fetchTopic,
   fetchTrendingDigest,
+  fetchUserPosts,
   parseTrendingId,
 } from "./sources/x.ts";
 import { fetchAllFeeds, fetchFeed, readFeedList } from "./sources/rss.ts";
@@ -39,6 +40,7 @@ Usage:
   siftly yt --channel <@handle>  Recent videos of a channel (--list for titles only)
   siftly x [options]             X trending digest (needs X_BEARER_TOKEN)
   siftly x --query "<topic>"     Top recent X posts for a topic
+  siftly x --user <@handle>      A specific account's recent posts
   siftly x --news "<topic>"      Curated X news stories for a topic
   siftly x --news-id <id|url>    A specific news story (+ the posts behind it)
   siftly rss [url] [options]     RSS/Atom feeds (~/.siftly/feeds.txt or a url)
@@ -58,6 +60,7 @@ Options:
   --trends K      x: number of trends (default 5)
   --posts M       x: posts per trend / topic (default 5)
   --query TOPIC   x: search a topic instead of trends
+  --user HANDLE   x: a specific account's recent posts
   --news TOPIC    x: curated news stories for a topic
   --news-id ID    x: a specific news story (id or /i/trending/ URL)
   --since DUR     rss: only items newer than DUR (e.g. 24h, 3d, 90m)
@@ -188,6 +191,12 @@ async function runX(flags: Record<string, unknown>) {
         fetchNews(q, { maxResults }),
       );
       heading = `X News — ${q}`;
+    } else if (typeof flags.user === "string") {
+      const handle = flags.user;
+      const item = await cached(`x:user:${handle}:posts=${posts}`, "x", ttl, () =>
+        fetchUserPosts(handle, posts),
+      );
+      items = [item];
     } else if (typeof flags.query === "string") {
       const q = flags.query;
       const item = await cached(`x:query:${q}:posts=${posts}`, "x", ttl, () => fetchTopic(q, posts));
@@ -329,6 +338,7 @@ async function main() {
       trends: { type: "string" },
       posts: { type: "string" },
       query: { type: "string" },
+      user: { type: "string" },
       news: { type: "string" },
       "news-id": { type: "string" },
       since: { type: "string" },

@@ -3,9 +3,11 @@ import { describe, expect, test } from "bun:test";
 import {
   normalizeTopicItem,
   normalizeTrendItem,
+  normalizeUserItem,
   parseNewsSearch,
   parseNewsStory,
   parsePosts,
+  parsePostsRaw,
   parseTrends,
   parseTrendingId,
 } from "../src/sources/x.ts";
@@ -72,6 +74,31 @@ describe("parsePosts", () => {
     const posts = parsePosts(json, 3);
     const alice = posts.find((p) => p.id === "1")!;
     expect(alice.author).toBe("@alice (Alice)");
+  });
+});
+
+describe("user timeline", () => {
+  const json = {
+    data: [
+      { id: "1", text: "newest", author_id: "u1", created_at: "2026-07-11T10:00:00.000Z", public_metrics: { like_count: 2, retweet_count: 0, reply_count: 0 } },
+      { id: "2", text: "older but viral", author_id: "u1", created_at: "2026-07-10T10:00:00.000Z", public_metrics: { like_count: 999, retweet_count: 500, reply_count: 3 } },
+    ],
+    includes: { users: [{ id: "u1", username: "alice", name: "Alice" }] },
+  };
+
+  test("parsePostsRaw preserves API order (no engagement re-sort)", () => {
+    expect(parsePostsRaw(json).map((p) => p.id)).toEqual(["1", "2"]);
+    // by contrast, parsePosts would put the viral one first:
+    expect(parsePosts(json, 2).map((p) => p.id)).toEqual(["2", "1"]);
+  });
+
+  test("normalizeUserItem builds the handle title + posts as comments", () => {
+    const item = normalizeUserItem("alice", "Alice", parsePostsRaw(json));
+    expect(item.id).toBe("x:user:alice");
+    expect(item.source).toBe("x");
+    expect(item.title).toBe("@alice (Alice)");
+    expect(item.metadata.url).toBe("https://x.com/alice");
+    expect(item.comments.map((c) => c.text)).toEqual(["newest", "older but viral"]);
   });
 });
 

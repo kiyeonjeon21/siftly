@@ -61,10 +61,10 @@ export function parseTrends(json: TrendsResponse, limit: number): Trend[] {
     .map((t) => ({ name: t.trend_name, tweetCount: t.tweet_count ?? undefined }));
 }
 
-/** Parse a search response, resolve authors, and sort by engagement desc. */
-export function parsePosts(json: SearchResponse, count: number): Post[] {
+/** Parse a search/timeline response and resolve authors, preserving API order. */
+export function parsePostsRaw(json: SearchResponse): Post[] {
   const users = new Map((json.includes?.users ?? []).map((u) => [u.id, u]));
-  const posts: Post[] = (json.data ?? []).map((t) => {
+  return (json.data ?? []).map((t) => {
     const u = t.author_id ? users.get(t.author_id) : undefined;
     const handle = u ? `@${u.username}${u.name ? ` (${u.name})` : ""}` : "@unknown";
     const m = t.public_metrics ?? {};
@@ -78,6 +78,11 @@ export function parsePosts(json: SearchResponse, count: number): Post[] {
       replies: m.reply_count ?? 0,
     };
   });
+}
+
+/** Parse a search response, then rank by engagement desc and trim to `count`. */
+export function parsePosts(json: SearchResponse, count: number): Post[] {
+  const posts = parsePostsRaw(json);
   posts.sort((a, b) => b.likes + b.reposts - (a.likes + a.reposts));
   return posts.slice(0, count);
 }
@@ -196,6 +201,45 @@ export async function fetchTrendingDigest(opts: DigestOptions): Promise<Item[]> 
 export async function fetchTopic(query: string, count: number): Promise<Item> {
   const posts = await fetchTopPosts(query, count);
   return normalizeTopicItem(query, posts);
+}
+
+// ---- User timeline (a specific account's recent posts) ----
+
+interface UserLookup {
+  data?: { id: string; username: string; name?: string };
+}
+
+/** A user's recent posts -> an Item (posts in comments[], recency order). */
+export function normalizeUserItem(handle: string, name: string | undefined, posts: Post[]): Item {
+  return {
+    id: `x:user:${handle.toLowerCase()}`,
+    source: "x",
+    title: name ? `@${handle} (${name})` : `@${handle}`,
+    author: "",
+    timestamp: 0,
+    body: "",
+    comments: posts.map(postToComment),
+    metadata: { url: `https://x.com/${handle}`, query: `@${handle}` },
+  };
+}
+
+/** Fetch a specific account's most recent original posts (newest first). */
+export async function fetchUserPosts(handle: string, count: number): Promise<Item> {
+  const clean = handle.replace(/^@/, "");
+  const lookup = await apiGet<UserLookup>(`/users/by/username/${clean}`, {
+    "user.fields": "name,username",
+  });
+  const user = lookup.data;
+  if (!user) throw new Error(`X user not found: @${clean}`);
+
+  const json = await apiGet<SearchResponse>(`/users/${user.id}/tweets`, {
+    max_results: String(Math.min(100, Math.max(5, count))),
+    "tweet.fields": "public_metrics,created_at,author_id",
+    expansions: "author_id",
+    "user.fields": "username,name",
+    exclude: "retweets,replies",
+  });
+  return normalizeUserItem(clean, user.name, parsePostsRaw(json).slice(0, count));
 }
 
 // ---- News (Grok-curated news stories; the /explore/tabs/news and
