@@ -1,0 +1,18 @@
+{
+  "name": "siftly",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "bin": {
+    "siftly": "src/cli.ts"
+  },
+  "description": "Sift the signal from the noise. Pull content from multiple sources into agent-ready form, locally.",
+  "scripts": {
+    "siftly": "bun run src/cli.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module"
+}
