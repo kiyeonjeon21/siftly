@@ -197,6 +197,10 @@ test/
 
 Run `bun test` for the unit tests and `bun run typecheck` for types.
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and the project conventions (no built-in LLM, pure-parse-vs-network split, fixture-only tests).
+
 ## License
 
-TBD
+Released under the [MIT License](LICENSE) © 2026 Kiyeon Jeon.
