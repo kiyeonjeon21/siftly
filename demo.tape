@@ -16,9 +16,7 @@ Hide
 Type "alias siftly='bun run src/cli.ts' && clear" Enter
 Show
 
-Type "# siftly — pull HN / YouTube / X / RSS into agent-ready text (your agent summarizes)"
-Enter
-Sleep 1500ms
+Sleep 800ms
 
 Type "siftly x --news 'AI' --posts 1 --no-hint"
 Sleep 500ms
@@ -37,9 +35,5 @@ Sleep 3s
 
 Type "siftly cache stats"
 Sleep 500ms
-Enter
-Sleep 2500ms
-
-Type "# ...and it's an MCP server: in Claude Desktop just ask 'what's on HN today?'"
 Enter
 Sleep 2500ms
