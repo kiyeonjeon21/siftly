@@ -1,5 +1,7 @@
 # siftly
 
+[![MCP server](https://img.shields.io/badge/MCP-server-8A2BE2)](#use-as-an-mcp-server) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Roadmap](https://img.shields.io/badge/roadmap-open%20issues-informational)](https://github.com/kiyeonjeon21/siftly/issues)
+
 > Sift the signal from the noise. A personal tool that pulls information from multiple sources and lets you digest the essentials fast, locally.
 
 **siftly** = `sift` (to filter through a sieve) + `-ly` (swiftly / a light, friendly tool). It gathers information from sources like YouTube, X, and Hacker News and hands it back as **clean, agent-ready text** — right on your machine. siftly itself does no summarizing; it extracts and normalizes content so the coding agent you already use (Claude Code, Codex, …) can produce the summary and read the comment sentiment in seconds.
@@ -59,6 +61,8 @@ siftly doesn't generate this — the consuming agent does, from the extracted co
 - **CLI-first, service-ready** — keep core logic as a library and the CLI as a thin wrapper, so a web service can later call the same core.
 
 ## Roadmap
+
+Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues) — e.g. [#1 Support running as an MCP server in Claude Desktop](https://github.com/kiyeonjeon21/siftly/issues/1).
 
 - [x] **Phase 1 — Vertical slice (Hacker News)**
   Whole pipeline end-to-end via the free Algolia HN API — front-page fetch, comment tree, SQLite cache, agent-ready markdown. No auth, no cost.
