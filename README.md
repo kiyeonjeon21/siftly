@@ -86,6 +86,25 @@ Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues) — e.
 | YouTube | `yt-dlp` captions, `--gemini` fallback (Gemini key) | Medium |
 | X (Twitter) | X API v2 Bearer (trends, search, curated news) — reads need Basic tier (~$200/mo) | High |
 
+## Demo
+
+[`./demo.sh`](demo.sh) runs a short, recordable tour of the CLI — curated X news, a
+YouTube channel, an account's posts, the multi-source digest, and cache stats.
+
+```bash
+./demo.sh                                  # run the tour
+DEMO_PAUSE=3 ./demo.sh                      # slower, for recording
+asciinema rec siftly.cast -c ./demo.sh      # record → then: agg siftly.cast docs/demo.gif
+```
+
+<!-- Record the GIF, drop it at docs/demo.gif, and uncomment:
+![siftly demo](docs/demo.gif)
+-->
+
+The real payoff is the MCP loop: in Claude Desktop/Code, just ask _"what's on Hacker
+News today?"_ or _"summarize this YouTube video"_ and siftly is called for you — screen-record
+that for the most compelling clip (see [Use as an MCP server](#use-as-an-mcp-server)).
+
 ## Getting Started
 
 Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). npm dependencies: `fast-xml-parser` (feed parsing) and, for the MCP server, `@modelcontextprotocol/sdk` + `zod`; everything else uses native `fetch`, `bun:sqlite`, and `util.parseArgs`. Per-source setup:
