@@ -88,19 +88,19 @@ Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues) — e.
 
 ## Demo
 
-![siftly demo](docs/demo.gif)
+**From a coding agent** — with the siftly MCP server configured, you just ask in natural
+language and the agent calls siftly and summarizes:
 
-[`./demo.sh`](demo.sh) runs the tour live in your terminal; [`demo.tape`](demo.tape)
-re-renders the GIF above via [VHS](https://github.com/charmbracelet/vhs):
+![siftly from a coding agent](docs/agent.gif)
 
-```bash
-./demo.sh          # run the tour (DEMO_PAUSE=3 to slow it down)
-vhs demo.tape      # regenerate docs/demo.gif
-```
+**Or drive the CLI directly:**
 
-The real payoff is the MCP loop: in Claude Desktop/Code, just ask _"what's on Hacker
-News today?"_ or _"summarize this YouTube video"_ and siftly is called for you — screen-record
-that for the most compelling clip (see [Use as an MCP server](#use-as-an-mcp-server)).
+![siftly CLI](docs/demo.gif)
+
+Both GIFs are generated with [VHS](https://github.com/charmbracelet/vhs) — `vhs agent.tape`
+and `vhs demo.tape` (or run the CLI tour live with [`./demo.sh`](demo.sh)). For the most
+compelling clip, screen-record the same loop in the Claude Desktop UI
+(see [Use as an MCP server](#use-as-an-mcp-server)).
 
 ## Getting Started
 
