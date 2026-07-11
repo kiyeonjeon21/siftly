@@ -84,7 +84,7 @@ siftly doesn't generate this — the consuming agent does, from the extracted co
 
 ## Getting Started
 
-Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). The only npm dependency is `fast-xml-parser` (feed parsing); everything else uses native `fetch`, `bun:sqlite`, and `util.parseArgs`. Per-source setup:
+Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). npm dependencies: `fast-xml-parser` (feed parsing) and, for the MCP server, `@modelcontextprotocol/sdk` + `zod`; everything else uses native `fetch`, `bun:sqlite`, and `util.parseArgs`. Per-source setup:
 
 - **Hacker News** — nothing; free API.
 - **RSS** — list feed URLs in `~/.siftly/feeds.txt` (one per line, `#` comments), or pass one on the command line.
@@ -141,11 +141,38 @@ Then paste the output into your coding agent (or have it run the command) and as
 
 Fetched results are cached in SQLite at `~/.siftly/siftly.db`, so re-runs are near-instant.
 
+## Use as an MCP server
+
+siftly also runs as a local [MCP](https://modelcontextprotocol.io) server, so an MCP host (Claude Desktop / Claude Code / Cursor) can call the sources as tools and summarize the results itself — no copy-paste. It's a thin stdio adapter over the same core; every tool is read-only.
+
+Tools: `siftly_digest`, `siftly_hackernews`, `siftly_youtube`, `siftly_x_news`, `siftly_x_search`, `siftly_rss` (each takes an optional `format: "markdown" | "json"`).
+
+**Claude Code** — a project-scoped `.mcp.json` is included; open the repo and approve the `siftly` server. It runs `bun run src/mcp.ts` with the repo as the working directory, so keys load from `.env`.
+
+**Claude Desktop** — add to `claude_desktop_config.json` (keys go here since Desktop doesn't load `.env`):
+
+```json
+{
+  "mcpServers": {
+    "siftly": {
+      "command": "bun",
+      "args": ["run", "/absolute/path/to/siftly/src/mcp.ts"],
+      "env": { "X_BEARER_TOKEN": "...", "GEMINI_API_KEY": "..." }
+    }
+  }
+}
+```
+
+Then just ask: _"what's on Hacker News today?"_, _"summarize this YouTube video: <url>"_, or _"what's the X news on AI?"_ — the host calls siftly and summarizes.
+
+> Local stdio suits a personal, single-user tool (it needs `yt-dlp`, the local cache, and your own API keys). Distributing it to others would mean packaging as an MCPB or a remote HTTP server.
+
 ## Project Structure
 
 ```
 src/
   cli.ts              # entry point + arg parsing (util.parseArgs)
+  mcp.ts              # MCP server (stdio) exposing the sources as tools
   digest.ts           # multi-source orchestrator (siftly digest)
   types.ts            # normalized Item / Comment
   sources/

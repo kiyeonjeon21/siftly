@@ -6,7 +6,8 @@
     "typescript": "^5"
   },
   "bin": {
-    "siftly": "src/cli.ts"
+    "siftly": "src/cli.ts",
+    "siftly-mcp": "src/mcp.ts"
   },
   "description": "Sift the signal from the noise. Pull content from multiple sources into agent-ready form, locally.",
   "scripts": {
@@ -16,6 +17,8 @@
   },
   "type": "module",
   "dependencies": {
-    "fast-xml-parser": "^5.10.0"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "fast-xml-parser": "^5.10.0",
+    "zod": "^4.4.3"
   }
 }
