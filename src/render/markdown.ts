@@ -146,3 +146,20 @@ export function renderMarkdown(items: Item[], opts: RenderOptions = {}): string 
   }
   return blocks.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
 }
+
+const DIGEST_HINT = `---
+
+> For the agent: for each section above, give me a **3-line gist** and the **key
+> points**; where there are comments or posts, add the overall **sentiment**.`;
+
+/** Render several source sections into one document (each source an H1). */
+export function renderDigest(
+  sections: { label: string; items: Item[] }[],
+  opts: { hint?: boolean } = {},
+): string {
+  const blocks = sections
+    .filter((s) => s.items.length)
+    .map((s) => renderMarkdown(s.items, { heading: s.label, hint: false }));
+  if (opts.hint !== false && blocks.length) blocks.push(DIGEST_HINT);
+  return blocks.join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
+}

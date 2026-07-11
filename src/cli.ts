@@ -15,8 +15,9 @@ import { fetchStory, fetchTopStories } from "./sources/hackernews.ts";
 import { fetchVideo, NoCaptionsError } from "./sources/youtube.ts";
 import { fetchTopic, fetchTrendingDigest } from "./sources/x.ts";
 import { fetchAllFeeds, fetchFeed, readFeedList } from "./sources/rss.ts";
+import { fetchDigest, parseSources, type DigestSource } from "./digest.ts";
 import { parseVideoId } from "./util/youtube-url.ts";
-import { renderMarkdown } from "./render/markdown.ts";
+import { renderDigest, renderMarkdown } from "./render/markdown.ts";
 import type { Item } from "./types.ts";
 
 const DEFAULT_TTL_SEC = 30 * 60; // 30 min
@@ -30,9 +31,11 @@ Usage:
   siftly x [options]             X trending digest (needs X_BEARER_TOKEN)
   siftly x --query "<topic>"     Top recent X posts for a topic
   siftly rss [url] [options]     RSS/Atom feeds (~/.siftly/feeds.txt or a url)
+  siftly digest [options]        Several sources at once, one document
 
 Options:
-  --limit N       hn: stories (default 10); rss: items (default 20)
+  --sources LIST  digest: comma list of hn,rss,x (default hn,rss)
+  --limit N       hn: stories (default 10); rss: items (default 20); digest: 8/source
   --comments M    hn: max comments per story (default 15)
   --timestamps    yt: prefix transcript lines with [mm:ss] offsets
   --gemini        yt: transcribe with Gemini when a video has no captions
@@ -201,6 +204,33 @@ async function runRss(positionals: string[], flags: Record<string, unknown>) {
   emit(output, flags, items.length);
 }
 
+async function runDigest(flags: Record<string, unknown>) {
+  const ttl = flags.refresh ? 0 : DEFAULT_TTL_SEC;
+  const limit = Number(flags.limit ?? 8);
+
+  let sources: DigestSource[];
+  try {
+    sources = parseSources(typeof flags.sources === "string" ? flags.sources : undefined);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
+  }
+
+  let sinceCutoff: number | null = null;
+  if (typeof flags.since === "string") {
+    sinceCutoff = parseSince(flags.since);
+    if (sinceCutoff === null) fail(`invalid --since "${flags.since}" (use e.g. 24h, 3d, 90m)`);
+  }
+
+  const sections = await fetchDigest({ sources, limit, sinceCutoff, ttlSec: ttl });
+
+  const output = flags.json
+    ? JSON.stringify(sections.flatMap((s) => s.items), null, 2)
+    : renderDigest(sections, { hint: flags["no-hint"] ? false : true });
+
+  const count = sections.reduce((n, s) => n + s.items.length, 0);
+  emit(output, flags, count);
+}
+
 function emit(output: string, flags: Record<string, unknown>, count: number) {
   if (typeof flags.out === "string") {
     writeFileSync(flags.out, output);
@@ -224,6 +254,7 @@ async function main() {
       posts: { type: "string" },
       query: { type: "string" },
       since: { type: "string" },
+      sources: { type: "string" },
       json: { type: "boolean" },
       out: { type: "string" },
       refresh: { type: "boolean" },
@@ -251,6 +282,9 @@ async function main() {
       break;
     case "rss":
       await runRss(rest, values);
+      break;
+    case "digest":
+      await runDigest(values);
       break;
     default:
       fail(`unknown command "${command}"`);

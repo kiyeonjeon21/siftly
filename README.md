@@ -101,6 +101,11 @@ X_BEARER_TOKEN=...
 ```bash
 bun install
 
+# Digest — several sources at once, one document (the "morning one-shot")
+bun run src/cli.ts digest                        # HN + RSS, ready to paste into an agent
+bun run src/cli.ts digest --sources hn,rss,x     # add X (needs X_BEARER_TOKEN)
+bun run src/cli.ts digest --since 24h --limit 8
+
 # Hacker News — today's front page → agent-ready markdown on stdout
 bun run src/cli.ts hn
 bun run src/cli.ts hn --limit 5 --comments 20   # more stories / comments
@@ -138,6 +143,7 @@ Fetched results are cached in SQLite at `~/.siftly/siftly.db`, so re-runs are ne
 ```
 src/
   cli.ts              # entry point + arg parsing (util.parseArgs)
+  digest.ts           # multi-source orchestrator (siftly digest)
   types.ts            # normalized Item / Comment
   sources/
     hackernews.ts     # Algolia HN API: fetch + normalize
@@ -156,6 +162,7 @@ test/
   youtube.test.ts     # fixture-based unit tests (no network)
   x.test.ts           # fixture-based unit tests (no network)
   rss.test.ts         # fixture-based unit tests (no network)
+  digest.test.ts      # fixture-based unit tests (no network)
 ```
 
 Run `bun test` for the unit tests and `bun run typecheck` for types.
