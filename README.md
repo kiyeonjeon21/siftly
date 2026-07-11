@@ -88,18 +88,15 @@ Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues) — e.
 
 ## Demo
 
-[`./demo.sh`](demo.sh) runs a short, recordable tour of the CLI — curated X news, a
-YouTube channel, an account's posts, the multi-source digest, and cache stats.
+![siftly demo](docs/demo.gif)
+
+[`./demo.sh`](demo.sh) runs the tour live in your terminal; [`demo.tape`](demo.tape)
+re-renders the GIF above via [VHS](https://github.com/charmbracelet/vhs):
 
 ```bash
-./demo.sh                                  # run the tour
-DEMO_PAUSE=3 ./demo.sh                      # slower, for recording
-asciinema rec siftly.cast -c ./demo.sh      # record → then: agg siftly.cast docs/demo.gif
+./demo.sh          # run the tour (DEMO_PAUSE=3 to slow it down)
+vhs demo.tape      # regenerate docs/demo.gif
 ```
-
-<!-- Record the GIF, drop it at docs/demo.gif, and uncomment:
-![siftly demo](docs/demo.gif)
--->
 
 The real payoff is the MCP loop: in Claude Desktop/Code, just ask _"what's on Hacker
 News today?"_ or _"summarize this YouTube video"_ and siftly is called for you — screen-record
