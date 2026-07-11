@@ -51,6 +51,7 @@ function metaLine(item: Item): string {
   const nc = md.numComments ?? item.comments.length;
   if (nc > 0 && item.source !== "x") parts.push(`${nc} comments`);
   if (item.author) parts.push(`by ${item.author}`);
+  if (md.feedTitle && md.feedTitle !== item.author) parts.push(`via ${md.feedTitle}`);
   const t = timeAgo(item.timestamp);
   if (t) parts.push(t);
   return parts.join(" · ");

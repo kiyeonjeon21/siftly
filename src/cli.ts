@@ -14,6 +14,7 @@ import { cached } from "./store/cache.ts";
 import { fetchStory, fetchTopStories } from "./sources/hackernews.ts";
 import { fetchVideo, NoCaptionsError } from "./sources/youtube.ts";
 import { fetchTopic, fetchTrendingDigest } from "./sources/x.ts";
+import { fetchAllFeeds, fetchFeed, readFeedList } from "./sources/rss.ts";
 import { parseVideoId } from "./util/youtube-url.ts";
 import { renderMarkdown } from "./render/markdown.ts";
 import type { Item } from "./types.ts";
@@ -28,9 +29,10 @@ Usage:
   siftly yt <url|id> [options]   A YouTube video's transcript (needs yt-dlp)
   siftly x [options]             X trending digest (needs X_BEARER_TOKEN)
   siftly x --query "<topic>"     Top recent X posts for a topic
+  siftly rss [url] [options]     RSS/Atom feeds (~/.siftly/feeds.txt or a url)
 
 Options:
-  --limit N       hn: number of stories (default 10)
+  --limit N       hn: stories (default 10); rss: items (default 20)
   --comments M    hn: max comments per story (default 15)
   --timestamps    yt: prefix transcript lines with [mm:ss] offsets
   --gemini        yt: transcribe with Gemini when a video has no captions
@@ -38,6 +40,7 @@ Options:
   --trends K      x: number of trends (default 5)
   --posts M       x: posts per trend / topic (default 5)
   --query TOPIC   x: search a topic instead of trends
+  --since DUR     rss: only items newer than DUR (e.g. 24h, 3d, 90m)
   --json          Output normalized Items as JSON instead of markdown
   --out FILE      Write output to FILE instead of stdout
   --refresh       Bypass the local cache and refetch
@@ -153,6 +156,51 @@ async function runX(flags: Record<string, unknown>) {
   emit(output, flags, items.length);
 }
 
+/** "24h" | "3d" | "90m" -> cutoff epoch seconds, or null if unparseable. */
+function parseSince(s: string): number | null {
+  const m = s.match(/^(\d+)\s*([hdm])$/i);
+  if (!m) return null;
+  const n = Number(m[1]);
+  const unit = m[2]!.toLowerCase();
+  const secs = unit === "d" ? 86400 : unit === "h" ? 3600 : 60;
+  return Math.floor(Date.now() / 1000) - n * secs;
+}
+
+async function runRss(positionals: string[], flags: Record<string, unknown>) {
+  const ttl = flags.refresh ? 0 : DEFAULT_TTL_SEC;
+  const limit = Number(flags.limit ?? 20);
+  const single = positionals[0];
+
+  let items: Item[];
+  try {
+    if (single) {
+      items = await cached(`rss:${single}`, "rss", ttl, () => fetchFeed(single));
+      items = [...items].sort((a, b) => b.timestamp - a.timestamp);
+    } else {
+      items = await fetchAllFeeds(readFeedList(), ttl);
+    }
+  } catch (err) {
+    console.error(`siftly: ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(2);
+  }
+
+  if (typeof flags.since === "string") {
+    const cutoff = parseSince(flags.since);
+    if (cutoff === null) fail(`invalid --since "${flags.since}" (use e.g. 24h, 3d, 90m)`);
+    items = items.filter((i) => i.timestamp >= cutoff);
+  }
+  items = items.slice(0, limit);
+
+  const output = flags.json
+    ? JSON.stringify(items, null, 2)
+    : renderMarkdown(items, {
+        hint: flags["no-hint"] ? false : true,
+        heading: single ? undefined : "RSS — latest",
+      });
+
+  emit(output, flags, items.length);
+}
+
 function emit(output: string, flags: Record<string, unknown>, count: number) {
   if (typeof flags.out === "string") {
     writeFileSync(flags.out, output);
@@ -175,6 +223,7 @@ async function main() {
       trends: { type: "string" },
       posts: { type: "string" },
       query: { type: "string" },
+      since: { type: "string" },
       json: { type: "boolean" },
       out: { type: "string" },
       refresh: { type: "boolean" },
@@ -199,6 +248,9 @@ async function main() {
       break;
     case "x":
       await runX(values);
+      break;
+    case "rss":
+      await runRss(rest, values);
       break;
     default:
       fail(`unknown command "${command}"`);

@@ -11,7 +11,8 @@ Information sources are fragmented, and opening each one to read costs time. sif
 - **Hacker News** — today's top stories with their comment trees, ready to summarize _(implemented)_
 - **YouTube** — pull a video's transcript/captions from a URL
 - **X (Twitter)** — via the paid API: the trending page plus a few posts from relevant well-known accounts
-- **Later** — Reddit, RSS, newsletters, and more as plugins
+- **RSS / newsletters** — any RSS/Atom feed (blogs, Substack, …), merged newest-first
+- **Later** — Reddit and more as plugins
 
 Designed as a personal tool first, with an eye toward growing into a service if it proves useful.
 
@@ -65,8 +66,8 @@ siftly doesn't generate this — the consuming agent does, from the extracted co
   Transcript + metadata via `yt-dlp` (the official Data API can't return third-party captions, and the unofficial endpoint is po_token-gated). Manual/auto caption selection, optional `[mm:ss]` timestamps.
 - [x] **Phase 3 — X ingestion**
   Via the X API v2 (App-only Bearer, read-only). Trending digest + the most-engaged recent posts per trend, or a free-form topic search. Also YouTube's `--gemini` fallback for caption-less videos (Gemini REST, no SDK).
-- [ ] **Phase 4 — RSS / newsletters**
-  Low-cost coverage for "today's tech news," complementing HN.
+- [x] **Phase 4 — RSS / newsletters**
+  RSS/Atom feeds from `~/.siftly/feeds.txt` (or a single URL), merged newest-first, with `--since` filtering. Newsletters that expose a feed (Substack `/feed`, …) come through the same path. Free, no auth.
 - [ ] **Phase 5 — Local web UI + thread expansion**
   Follow a single topic across multiple sources.
 - [ ] **Phase 6 — Service**
@@ -77,14 +78,16 @@ siftly doesn't generate this — the consuming agent does, from the extracted co
 | Source | Access | Difficulty |
 |--------|--------|------------|
 | Hacker News | Algolia HN API (free, no auth) | Low |
+| RSS / newsletters | Any RSS/Atom feed (free, no auth) | Low |
 | YouTube | `yt-dlp` captions, `--gemini` fallback (Gemini key) | Medium |
 | X (Twitter) | X API v2 Bearer — reads need Basic tier (~$200/mo) | High |
 
 ## Getting Started
 
-Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). No npm runtime dependencies (native `fetch`, `bun:sqlite`, `util.parseArgs`). Per-source setup:
+Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). The only npm dependency is `fast-xml-parser` (feed parsing); everything else uses native `fetch`, `bun:sqlite`, and `util.parseArgs`. Per-source setup:
 
 - **Hacker News** — nothing; free API.
+- **RSS** — list feed URLs in `~/.siftly/feeds.txt` (one per line, `#` comments), or pass one on the command line.
 - **YouTube** — [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) on your PATH (`brew install yt-dlp`). For the `--gemini` fallback, set `GEMINI_API_KEY`.
 - **X** — set `X_BEARER_TOKEN` (App-only Bearer). Reads need the Basic tier or higher; Free tier returns 403.
 
@@ -113,6 +116,11 @@ bun run src/cli.ts x                             # trending + top posts per tren
 bun run src/cli.ts x --query "OpenAI" --posts 5 # top recent posts on a topic
 bun run src/cli.ts x --woeid 23424868           # trends for a location (KR)
 
+# RSS — feeds from ~/.siftly/feeds.txt, or a single feed
+bun run src/cli.ts rss                           # all feeds, merged newest-first
+bun run src/cli.ts rss --since 24h --limit 10    # only the last day
+bun run src/cli.ts rss "https://simonwillison.net/atom/everything/"
+
 # Shared options
 bun run src/cli.ts hn --json                    # normalized Items as JSON
 bun run src/cli.ts hn --out today.md            # write to a file
@@ -135,6 +143,7 @@ src/
     hackernews.ts     # Algolia HN API: fetch + normalize
     youtube.ts        # yt-dlp captions + Gemini fallback → normalize
     x.ts              # X API v2: trends + search → normalize
+    rss.ts            # RSS/Atom feeds (fast-xml-parser) → normalize
   store/
     cache.ts          # bun:sqlite fetch cache (TTL)
   render/
@@ -146,6 +155,7 @@ test/
   hackernews.test.ts  # fixture-based unit tests (no network)
   youtube.test.ts     # fixture-based unit tests (no network)
   x.test.ts           # fixture-based unit tests (no network)
+  rss.test.ts         # fixture-based unit tests (no network)
 ```
 
 Run `bun test` for the unit tests and `bun run typecheck` for types.

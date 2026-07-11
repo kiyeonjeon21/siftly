@@ -6,7 +6,7 @@
  * (YouTube) exists and the real duplication is visible.
  */
 
-export type SourceKind = "hackernews" | "youtube" | "x";
+export type SourceKind = "hackernews" | "youtube" | "x" | "rss";
 
 export interface Comment {
   id: string;
@@ -64,5 +64,8 @@ export interface ItemMetadata {
   tweetCount?: number;
   /** The search query behind an X item. */
   query?: string;
+  // RSS extras
+  /** Title of the feed an item came from. */
+  feedTitle?: string;
   [key: string]: unknown;
 }
