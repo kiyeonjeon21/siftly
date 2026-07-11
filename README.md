@@ -1,6 +1,6 @@
 # siftly
 
-[![MCP server](https://img.shields.io/badge/MCP-server-8A2BE2)](#use-as-an-mcp-server) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Roadmap](https://img.shields.io/badge/roadmap-open%20issues-informational)](https://github.com/kiyeonjeon21/siftly/issues)
+[![CI](https://github.com/kiyeonjeon21/siftly/actions/workflows/ci.yml/badge.svg)](https://github.com/kiyeonjeon21/siftly/actions/workflows/ci.yml) [![MCP server](https://img.shields.io/badge/MCP-server-8A2BE2)](#use-as-an-mcp-server) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Roadmap](https://img.shields.io/badge/roadmap-open%20issues-informational)](https://github.com/kiyeonjeon21/siftly/issues)
 
 > Sift the signal from the noise. A personal tool that pulls information from multiple sources and lets you digest the essentials fast, locally.
 
