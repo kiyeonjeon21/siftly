@@ -111,5 +111,25 @@ export async function fetchDigest(opts: DigestOptions): Promise<DigestSection[]>
         }),
     ),
   );
-  return results.map((r) => ({ source: r.source, label: LABELS[r.source], items: r.items }));
+  const sections = results.map((r) => ({ source: r.source, label: LABELS[r.source], items: r.items }));
+  return dedupeAcrossSections(sections);
+}
+
+/**
+ * Drop items whose `metadata.url` already appeared in an earlier section (or
+ * earlier in the same section) — e.g. an HN story that also shows up via an HN
+ * RSS feed. Items without a url are always kept. Earliest section wins.
+ */
+export function dedupeAcrossSections(sections: DigestSection[]): DigestSection[] {
+  const seen = new Set<string>();
+  return sections.map((s) => ({
+    ...s,
+    items: s.items.filter((it) => {
+      const url = it.metadata.url;
+      if (!url) return true;
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    }),
+  }));
 }

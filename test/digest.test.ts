@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 
-import { parseSources } from "../src/digest.ts";
+import { dedupeAcrossSections, parseSources, type DigestSection } from "../src/digest.ts";
 import { renderDigest } from "../src/render/markdown.ts";
 import type { Item } from "../src/types.ts";
 
@@ -35,6 +35,35 @@ describe("parseSources", () => {
 
   test("throws on unknown source", () => {
     expect(() => parseSources("reddit")).toThrow(/unknown source/);
+  });
+});
+
+describe("dedupeAcrossSections", () => {
+  const withUrl = (source: Item["source"], title: string, url: string): Item => ({
+    ...item(source, title),
+    metadata: { url },
+  });
+
+  test("drops later items sharing a url (earliest wins), keeps url-less items", () => {
+    const sections: DigestSection[] = [
+      {
+        source: "hackernews",
+        label: "Hacker News",
+        items: [withUrl("hackernews", "A", "http://x/a"), withUrl("hackernews", "B", "http://x/b")],
+      },
+      {
+        source: "rss",
+        label: "RSS",
+        items: [
+          withUrl("rss", "A-dup", "http://x/a"),
+          withUrl("rss", "C", "http://x/c"),
+          item("rss", "no-url"),
+        ],
+      },
+    ];
+    const out = dedupeAcrossSections(sections);
+    expect(out[0]!.items.map((i) => i.title)).toEqual(["A", "B"]);
+    expect(out[1]!.items.map((i) => i.title)).toEqual(["C", "no-url"]);
   });
 });
 
