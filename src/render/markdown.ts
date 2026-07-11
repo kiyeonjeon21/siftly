@@ -47,6 +47,8 @@ function metaLine(item: Item): string {
   if (md.views !== undefined) parts.push(`${abbrev(md.views)} views`);
   if (md.durationSec !== undefined) parts.push(formatDuration(md.durationSec));
   if (md.tweetCount !== undefined) parts.push(`${abbrev(md.tweetCount)} posts`);
+  if (md.category) parts.push(md.category);
+  if (md.topics?.length) parts.push(md.topics.slice(0, 4).join(", "));
   // Comment count is only meaningful where comments are actual comments (HN).
   const nc = md.numComments ?? item.comments.length;
   if (nc > 0 && item.source !== "x") parts.push(`${nc} comments`);

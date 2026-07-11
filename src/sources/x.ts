@@ -193,3 +193,122 @@ export async function fetchTopic(query: string, count: number): Promise<Item> {
   const posts = await fetchTopPosts(query, count);
   return normalizeTopicItem(query, posts);
 }
+
+// ---- News (Grok-curated news stories; the /explore/tabs/news and
+//      /i/trending/<id> content, reachable with the app-only Bearer) ----
+
+interface NewsStoryRaw {
+  id: string;
+  name?: string | null;
+  summary?: string | null;
+  category?: string | null;
+  updated_at?: string | null;
+  contexts?: {
+    topics?: string[];
+    entities?: { people?: string[]; organizations?: string[] };
+  };
+  cluster_posts_results?: { post_id: string }[];
+}
+
+const NEWS_FIELDS = "id,name,summary,category,contexts,keywords,updated_at,cluster_posts_results";
+
+/** The public trend/news detail URL for a story id. */
+function newsUrl(id: string): string {
+  return `https://x.com/i/trending/${id}`;
+}
+
+/** Topics + notable people/orgs behind a story, deduped. */
+function newsTopics(ctx: NewsStoryRaw["contexts"]): string[] {
+  if (!ctx) return [];
+  const all = [
+    ...(ctx.topics ?? []),
+    ...(ctx.entities?.people ?? []),
+    ...(ctx.entities?.organizations ?? []),
+  ].filter(Boolean);
+  return [...new Set(all)];
+}
+
+// ---- Pure parsing ----
+
+export function parseNewsStory(raw: NewsStoryRaw, comments: Comment[] = []): Item {
+  const ms = raw.updated_at ? Date.parse(raw.updated_at) : NaN;
+  const topics = newsTopics(raw.contexts);
+  return {
+    id: `x:news:${raw.id}`,
+    source: "x",
+    title: raw.name ?? "(untitled)",
+    author: "",
+    timestamp: Number.isFinite(ms) ? Math.floor(ms / 1000) : 0,
+    body: raw.summary ?? "",
+    comments,
+    metadata: {
+      url: newsUrl(raw.id),
+      category: raw.category ?? undefined,
+      topics: topics.length ? topics : undefined,
+    },
+  };
+}
+
+export function parseNewsSearch(json: { data?: NewsStoryRaw[] }): Item[] {
+  return (json.data ?? []).map((s) => parseNewsStory(s));
+}
+
+/** Extract a story id from a bare number or an x.com/i/trending/<id> URL. */
+export function parseTrendingId(input: string): string | null {
+  const s = input.trim();
+  if (/^\d+$/.test(s)) return s;
+  const m = s.match(/\/i\/trending\/(\d+)/);
+  return m ? m[1]! : null;
+}
+
+// ---- Network ----
+
+export interface NewsOptions {
+  maxResults?: number;
+  maxAgeHours?: number;
+}
+
+/** Search Grok-curated news stories for a topic. */
+export async function fetchNews(query: string, opts: NewsOptions = {}): Promise<Item[]> {
+  const json = await apiGet<{ data?: NewsStoryRaw[] }>("/news/search", {
+    query,
+    max_results: String(Math.min(100, Math.max(1, opts.maxResults ?? 10))),
+    max_age_hours: String(Math.min(720, Math.max(1, opts.maxAgeHours ?? 168))),
+    "news.fields": NEWS_FIELDS,
+  });
+  return parseNewsSearch(json);
+}
+
+/** Look up specific posts by id, ranked by engagement (reuses parsePosts). */
+export async function fetchPostsByIds(ids: string[]): Promise<Post[]> {
+  if (!ids.length) return [];
+  const json = await apiGet<SearchResponse>("/tweets", {
+    ids: ids.slice(0, 100).join(","),
+    "tweet.fields": "public_metrics,created_at,author_id",
+    expansions: "author_id",
+    "user.fields": "username,name",
+  });
+  return parsePosts(json, ids.length);
+}
+
+/** A single news story; optionally enriched with the posts driving it. */
+export async function fetchNewsStory(
+  id: string,
+  opts: { withPosts?: boolean } = {},
+): Promise<Item> {
+  const json = await apiGet<{ data?: NewsStoryRaw }>(`/news/${id}`, {
+    "news.fields": NEWS_FIELDS,
+  });
+  const raw = json.data;
+  if (!raw) throw new Error(`no news story found for id ${id}`);
+
+  let comments: Comment[] = [];
+  if (opts.withPosts !== false) {
+    const postIds = (raw.cluster_posts_results ?? []).map((p) => p.post_id);
+    // Related posts are best-effort — a lookup failure shouldn't drop the story.
+    comments = await fetchPostsByIds(postIds)
+      .then((posts) => posts.map(postToComment))
+      .catch(() => []);
+  }
+  return parseNewsStory(raw, comments);
+}

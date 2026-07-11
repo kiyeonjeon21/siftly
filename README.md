@@ -10,7 +10,7 @@ Information sources are fragmented, and opening each one to read costs time. sif
 
 - **Hacker News** — today's top stories with their comment trees, ready to summarize _(implemented)_
 - **YouTube** — pull a video's transcript/captions from a URL
-- **X (Twitter)** — via the paid API: the trending page plus a few posts from relevant well-known accounts
+- **X (Twitter)** — via the paid API: trending topics, topic search, and curated news stories (with the posts driving them)
 - **RSS / newsletters** — any RSS/Atom feed (blogs, Substack, …), merged newest-first
 - **Later** — Reddit and more as plugins
 
@@ -80,7 +80,7 @@ siftly doesn't generate this — the consuming agent does, from the extracted co
 | Hacker News | Algolia HN API (free, no auth) | Low |
 | RSS / newsletters | Any RSS/Atom feed (free, no auth) | Low |
 | YouTube | `yt-dlp` captions, `--gemini` fallback (Gemini key) | Medium |
-| X (Twitter) | X API v2 Bearer — reads need Basic tier (~$200/mo) | High |
+| X (Twitter) | X API v2 Bearer (trends, search, curated news) — reads need Basic tier (~$200/mo) | High |
 
 ## Getting Started
 
@@ -116,10 +116,11 @@ bun run src/cli.ts yt "https://youtu.be/VIDEO_ID"
 bun run src/cli.ts yt VIDEO_ID --timestamps     # prefix lines with [mm:ss]
 bun run src/cli.ts yt VIDEO_ID --gemini         # transcribe if no captions
 
-# X — trending digest / topic search (needs X_BEARER_TOKEN)
+# X — trending / search / curated news (needs X_BEARER_TOKEN)
 bun run src/cli.ts x                             # trending + top posts per trend
 bun run src/cli.ts x --query "OpenAI" --posts 5 # top recent posts on a topic
-bun run src/cli.ts x --woeid 23424868           # trends for a location (KR)
+bun run src/cli.ts x --news "AI"                 # curated news stories for a topic
+bun run src/cli.ts x --news-id "https://x.com/i/trending/<id>"  # one story + the posts behind it
 
 # RSS — feeds from ~/.siftly/feeds.txt, or a single feed
 bun run src/cli.ts rss                           # all feeds, merged newest-first

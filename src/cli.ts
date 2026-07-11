@@ -13,7 +13,13 @@ import { writeFileSync } from "node:fs";
 import { cached } from "./store/cache.ts";
 import { fetchStory, fetchTopStories } from "./sources/hackernews.ts";
 import { fetchVideo, NoCaptionsError } from "./sources/youtube.ts";
-import { fetchTopic, fetchTrendingDigest } from "./sources/x.ts";
+import {
+  fetchNews,
+  fetchNewsStory,
+  fetchTopic,
+  fetchTrendingDigest,
+  parseTrendingId,
+} from "./sources/x.ts";
 import { fetchAllFeeds, fetchFeed, readFeedList } from "./sources/rss.ts";
 import { fetchDigest, parseSources, type DigestSource } from "./digest.ts";
 import { parseVideoId } from "./util/youtube-url.ts";
@@ -30,6 +36,8 @@ Usage:
   siftly yt <url|id> [options]   A YouTube video's transcript (needs yt-dlp)
   siftly x [options]             X trending digest (needs X_BEARER_TOKEN)
   siftly x --query "<topic>"     Top recent X posts for a topic
+  siftly x --news "<topic>"      Curated X news stories for a topic
+  siftly x --news-id <id|url>    A specific news story (+ the posts behind it)
   siftly rss [url] [options]     RSS/Atom feeds (~/.siftly/feeds.txt or a url)
   siftly digest [options]        Several sources at once, one document
 
@@ -43,6 +51,8 @@ Options:
   --trends K      x: number of trends (default 5)
   --posts M       x: posts per trend / topic (default 5)
   --query TOPIC   x: search a topic instead of trends
+  --news TOPIC    x: curated news stories for a topic
+  --news-id ID    x: a specific news story (id or /i/trending/ URL)
   --since DUR     rss: only items newer than DUR (e.g. 24h, 3d, 90m)
   --json          Output normalized Items as JSON instead of markdown
   --out FILE      Write output to FILE instead of stdout
@@ -132,7 +142,19 @@ async function runX(flags: Record<string, unknown>) {
   let items: Item[];
   let heading: string | undefined;
   try {
-    if (typeof flags.query === "string") {
+    if (typeof flags["news-id"] === "string") {
+      const id = parseTrendingId(flags["news-id"]);
+      if (!id) fail(`not a valid news id or x.com/i/trending URL: "${flags["news-id"]}"`);
+      const item = await cached(`x:news:id=${id}`, "x", ttl, () => fetchNewsStory(id));
+      items = [item];
+    } else if (typeof flags.news === "string") {
+      const q = flags.news;
+      const maxResults = Number(flags.posts ?? 10);
+      items = await cached(`x:news:q=${q}:n=${maxResults}`, "x", ttl, () =>
+        fetchNews(q, { maxResults }),
+      );
+      heading = `X News — ${q}`;
+    } else if (typeof flags.query === "string") {
       const q = flags.query;
       const item = await cached(`x:query:${q}:posts=${posts}`, "x", ttl, () => fetchTopic(q, posts));
       items = [item];
@@ -253,6 +275,8 @@ async function main() {
       trends: { type: "string" },
       posts: { type: "string" },
       query: { type: "string" },
+      news: { type: "string" },
+      "news-id": { type: "string" },
       since: { type: "string" },
       sources: { type: "string" },
       json: { type: "boolean" },

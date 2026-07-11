@@ -67,5 +67,10 @@ export interface ItemMetadata {
   // RSS extras
   /** Title of the feed an item came from. */
   feedTitle?: string;
+  // X News extras
+  /** News story category (e.g. "News", "Technology"). */
+  category?: string;
+  /** Topics / notable entities behind a news story. */
+  topics?: string[];
   [key: string]: unknown;
 }

@@ -3,8 +3,11 @@ import { describe, expect, test } from "bun:test";
 import {
   normalizeTopicItem,
   normalizeTrendItem,
+  parseNewsSearch,
+  parseNewsStory,
   parsePosts,
   parseTrends,
+  parseTrendingId,
 } from "../src/sources/x.ts";
 import { renderMarkdown } from "../src/render/markdown.ts";
 
@@ -115,5 +118,61 @@ describe("normalize + render", () => {
     const item = normalizeTopicItem("AI safety", posts);
     expect(item.id).toBe("x:query:ai-safety");
     expect(item.title).toBe("Search: AI safety");
+  });
+});
+
+describe("news", () => {
+  const RAW = {
+    id: "2076007273256890440",
+    name: "Musk accuses Altman of scamming",
+    summary: "The two traded barbs on X.",
+    category: "News",
+    updated_at: "2026-07-11T19:11:43.000Z",
+    contexts: {
+      topics: ["Technology"],
+      entities: { people: ["Elon Musk", "Sam Altman"], organizations: ["X"] },
+    },
+    cluster_posts_results: [{ post_id: "1" }, { post_id: "2" }],
+  };
+
+  test("parseNewsStory maps fields, dedupes topics+entities, builds trending url", () => {
+    const item = parseNewsStory(RAW as never);
+    expect(item.id).toBe("x:news:2076007273256890440");
+    expect(item.source).toBe("x");
+    expect(item.title).toBe("Musk accuses Altman of scamming");
+    expect(item.body).toBe("The two traded barbs on X.");
+    expect(item.metadata.category).toBe("News");
+    expect(item.metadata.topics).toEqual(["Technology", "Elon Musk", "Sam Altman", "X"]);
+    expect(item.metadata.url).toBe("https://x.com/i/trending/2076007273256890440");
+    expect(item.timestamp).toBe(Math.floor(Date.parse("2026-07-11T19:11:43.000Z") / 1000));
+    expect(item.comments).toHaveLength(0);
+  });
+
+  test("parseNewsSearch maps the data array", () => {
+    const items = parseNewsSearch({ data: [RAW as never] });
+    expect(items).toHaveLength(1);
+    expect(items[0]!.title).toBe("Musk accuses Altman of scamming");
+  });
+
+  test("render shows category + topics, no comments", () => {
+    const md = renderMarkdown([parseNewsStory(RAW as never)], { hint: false });
+    expect(md).toContain("## Musk accuses Altman of scamming");
+    expect(md).toContain("News · Technology, Elon Musk, Sam Altman, X");
+    expect(md).not.toContain("comments");
+  });
+
+  describe("parseTrendingId", () => {
+    const cases: [string, string | null][] = [
+      ["2076007273256890440", "2076007273256890440"],
+      ["https://x.com/i/trending/2076007273256890440", "2076007273256890440"],
+      ["https://x.com/i/trending/123?foo=bar", "123"],
+      ["https://x.com/explore/tabs/news", null],
+      ["not a url", null],
+    ];
+    for (const [input, expected] of cases) {
+      test(`${input} -> ${expected}`, () => {
+        expect(parseTrendingId(input)).toBe(expected);
+      });
+    }
   });
 });
