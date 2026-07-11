@@ -253,3 +253,87 @@ export async function fetchVideo(input: string, opts: FetchVideoOptions = {}): P
   if (opts.gemini) return normalizeGeminiVideo(meta, await geminiTranscribe(url));
   throw new NoCaptionsError(id);
 }
+
+// ---- Channel (recent videos of a channel/handle) ----
+
+/** Build a channel /videos URL from a handle, bare name, or full URL. */
+function channelUrl(input: string): string {
+  const s = input.trim();
+  if (/^https?:\/\//.test(s)) return s;
+  const handle = s.startsWith("@") ? s : `@${s}`;
+  return `https://www.youtube.com/${handle}/videos`;
+}
+
+/** Parse yt-dlp `%(id)s\t%(title)s` lines into {id, title}. */
+export function parseChannelListing(stdout: string): { id: string; title: string }[] {
+  return stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const tab = line.indexOf("\t");
+      return tab === -1
+        ? { id: line, title: "" }
+        : { id: line.slice(0, tab), title: line.slice(tab + 1) };
+    })
+    .filter((v) => v.id);
+}
+
+/** List a channel's most recent videos (fast, no transcript download). */
+export async function listChannelVideos(
+  input: string,
+  limit: number,
+): Promise<{ id: string; title: string }[]> {
+  const { stdout, stderr, code } = await runYtDlp([
+    "--flat-playlist",
+    "--playlist-end",
+    String(limit),
+    "--print",
+    "%(id)s\t%(title)s",
+    "--no-warnings",
+    channelUrl(input),
+  ]);
+  const vids = parseChannelListing(stdout);
+  if (!vids.length) {
+    throw new Error(
+      `no videos found for "${input}"${code !== 0 ? `: ${stderr.trim().split("\n").pop()}` : ""}`,
+    );
+  }
+  return vids;
+}
+
+export interface ChannelOptions {
+  limit: number;
+  gemini?: boolean;
+  /** List titles/links only, without fetching transcripts. */
+  list?: boolean;
+}
+
+/** A channel's recent videos as Items — titles-only, or with transcripts. */
+export async function fetchChannel(input: string, opts: ChannelOptions): Promise<Item[]> {
+  const vids = await listChannelVideos(input, opts.limit);
+
+  if (opts.list) {
+    return vids.map((v) => ({
+      id: v.id,
+      source: "youtube",
+      title: v.title || v.id,
+      author: "",
+      timestamp: 0,
+      body: "",
+      comments: [],
+      metadata: { url: watchUrl(v.id) },
+    }));
+  }
+
+  // Fetch transcripts concurrently; skip videos that fail (e.g. no captions).
+  const items = await Promise.all(
+    vids.map((v) =>
+      fetchVideo(v.id, { gemini: opts.gemini }).catch((e) => {
+        console.error(`siftly: skipping ${v.id} (${e instanceof Error ? e.message : String(e)})`);
+        return null;
+      }),
+    ),
+  );
+  return items.filter((x): x is Item => x !== null);
+}

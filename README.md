@@ -130,6 +130,8 @@ bun run src/cli.ts hn <story_id>                # one story, deep
 bun run src/cli.ts yt "https://youtu.be/VIDEO_ID"
 bun run src/cli.ts yt VIDEO_ID --timestamps     # prefix lines with [mm:ss]
 bun run src/cli.ts yt VIDEO_ID --gemini         # transcribe if no captions
+bun run src/cli.ts yt --channel @handle --limit 5   # a channel's recent videos
+bun run src/cli.ts yt --channel @handle --list      # titles/links only (no transcripts)
 
 # X — trending / search / curated news (needs X_BEARER_TOKEN)
 bun run src/cli.ts x                             # trending + top posts per trend

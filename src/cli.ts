@@ -12,7 +12,7 @@ import { writeFileSync } from "node:fs";
 
 import { cached, cacheStats, clearCache } from "./store/cache.ts";
 import { fetchStory, fetchTopStories } from "./sources/hackernews.ts";
-import { fetchVideo, NoCaptionsError } from "./sources/youtube.ts";
+import { fetchChannel, fetchVideo, NoCaptionsError } from "./sources/youtube.ts";
 import {
   fetchNews,
   fetchNewsStory,
@@ -36,6 +36,7 @@ Usage:
   siftly hn [options]            Today's Hacker News front page
   siftly hn <id> [options]       A single HN story (with comment tree)
   siftly yt <url|id> [options]   A YouTube video's transcript (needs yt-dlp)
+  siftly yt --channel <@handle>  Recent videos of a channel (--list for titles only)
   siftly x [options]             X trending digest (needs X_BEARER_TOKEN)
   siftly x --query "<topic>"     Top recent X posts for a topic
   siftly x --news "<topic>"      Curated X news stories for a topic
@@ -51,6 +52,8 @@ Options:
   --comments M    hn: max comments per story (default 15)
   --timestamps    yt: prefix transcript lines with [mm:ss] offsets
   --gemini        yt: transcribe with Gemini when a video has no captions
+  --channel NAME  yt: a channel's recent videos (@handle, name, or URL)
+  --list          yt: with --channel, list titles/links only (no transcripts)
   --woeid N       x: trends location id (default 1 = worldwide)
   --trends K      x: number of trends (default 5)
   --posts M       x: posts per trend / topic (default 5)
@@ -107,14 +110,41 @@ async function runHn(positionals: string[], flags: Record<string, unknown>) {
 }
 
 async function runYt(positionals: string[], flags: Record<string, unknown>) {
+  const ttl = flags.refresh ? 0 : DEFAULT_TTL_SEC;
+  const gemini = !!flags.gemini;
+
+  if (typeof flags.channel === "string") {
+    const chan = flags.channel;
+    const limit = Number(flags.limit ?? 5);
+    const list = !!flags.list;
+    let items: Item[];
+    try {
+      items = await cached(
+        `yt:channel:${chan}:n=${limit}${list ? ":list" : ""}`,
+        "youtube",
+        ttl,
+        () => fetchChannel(chan, { limit, gemini, list }),
+      );
+    } catch (err) {
+      console.error(`siftly: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(2);
+    }
+    const output = flags.json
+      ? JSON.stringify(items, null, 2)
+      : renderMarkdown(items, {
+          hint: flags["no-hint"] ? false : true,
+          timestamps: !!flags.timestamps,
+          heading: `YouTube — ${chan}`,
+        });
+    emit(output, flags, items.length);
+    return;
+  }
+
   const input = positionals[0];
-  if (!input) fail("yt requires a YouTube URL or video id");
+  if (!input) fail("yt requires a YouTube URL or video id (or --channel <handle>)");
   const videoId = parseVideoId(input);
   if (!videoId) fail(`not a recognizable YouTube URL or video id: "${input}"`);
 
-  const ttl = flags.refresh ? 0 : DEFAULT_TTL_SEC;
-
-  const gemini = !!flags.gemini;
   let item: Item;
   try {
     item = await cached(`yt:${videoId}`, "youtube", ttl, () => fetchVideo(videoId, { gemini }));
@@ -293,6 +323,8 @@ async function main() {
       comments: { type: "string" },
       timestamps: { type: "boolean" },
       gemini: { type: "boolean" },
+      channel: { type: "string" },
+      list: { type: "boolean" },
       woeid: { type: "string" },
       trends: { type: "string" },
       posts: { type: "string" },

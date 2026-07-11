@@ -4,6 +4,7 @@ import { parseVideoId, watchUrl } from "../src/util/youtube-url.ts";
 import {
   buildBody,
   normalizeVideo,
+  parseChannelListing,
   parseJson3,
   pickLang,
   type YtMeta,
@@ -30,6 +31,16 @@ describe("parseVideoId", () => {
 
   test("watchUrl", () => {
     expect(watchUrl("abc12345678")).toBe("https://www.youtube.com/watch?v=abc12345678");
+  });
+});
+
+describe("parseChannelListing", () => {
+  test("parses id<TAB>title lines, tolerates blank lines and missing title", () => {
+    expect(parseChannelListing("abc12345678\tFirst\nDEF45678901\tSecond video\n\nGHI78901234")).toEqual([
+      { id: "abc12345678", title: "First" },
+      { id: "DEF45678901", title: "Second video" },
+      { id: "GHI78901234", title: "" },
+    ]);
   });
 });
 
