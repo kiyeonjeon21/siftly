@@ -88,6 +88,7 @@ Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). The
 
 - **Hacker News** — nothing; free API.
 - **RSS** — list feed URLs in `~/.siftly/feeds.txt` (one per line, `#` comments), or pass one on the command line.
+- **X news in `digest`** — list topics in `~/.siftly/news.txt` (one per line); `digest --sources …,news` pulls curated stories for each.
 - **YouTube** — [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) on your PATH (`brew install yt-dlp`). For the `--gemini` fallback, set `GEMINI_API_KEY`.
 - **X** — set `X_BEARER_TOKEN` (App-only Bearer). Reads need the Basic tier or higher; Free tier returns 403.
 
@@ -103,7 +104,8 @@ bun install
 
 # Digest — several sources at once, one document (the "morning one-shot")
 bun run src/cli.ts digest                        # HN + RSS, ready to paste into an agent
-bun run src/cli.ts digest --sources hn,rss,x     # add X (needs X_BEARER_TOKEN)
+bun run src/cli.ts digest --sources hn,rss,news  # add curated X news (~/.siftly/news.txt topics)
+bun run src/cli.ts digest --sources hn,rss,x     # add X trending (needs X_BEARER_TOKEN)
 bun run src/cli.ts digest --since 24h --limit 8
 
 # Hacker News — today's front page → agent-ready markdown on stdout

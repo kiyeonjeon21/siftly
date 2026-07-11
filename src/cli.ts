@@ -42,7 +42,7 @@ Usage:
   siftly digest [options]        Several sources at once, one document
 
 Options:
-  --sources LIST  digest: comma list of hn,rss,x (default hn,rss)
+  --sources LIST  digest: comma list of hn,rss,x,news (default hn,rss)
   --limit N       hn: stories (default 10); rss: items (default 20); digest: 8/source
   --comments M    hn: max comments per story (default 15)
   --timestamps    yt: prefix transcript lines with [mm:ss] offsets

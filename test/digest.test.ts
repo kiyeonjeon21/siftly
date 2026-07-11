@@ -26,6 +26,7 @@ describe("parseSources", () => {
   test("resolves aliases and preserves order", () => {
     expect(parseSources("x,hn")).toEqual(["x", "hackernews"]);
     expect(parseSources("twitter,rss")).toEqual(["x", "rss"]);
+    expect(parseSources("hn,rss,news")).toEqual(["hackernews", "rss", "news"]);
   });
 
   test("dedupes", () => {

@@ -9,6 +9,10 @@
  * Pure parsing/normalization is separated from the network calls for testing.
  */
 
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
 import type { Comment, Item } from "../types.ts";
 
 const API = "https://api.x.com/2";
@@ -266,6 +270,26 @@ export function parseTrendingId(input: string): string | null {
 export interface NewsOptions {
   maxResults?: number;
   maxAgeHours?: number;
+}
+
+const NEWS_TOPICS_PATH = join(homedir(), ".siftly", "news.txt");
+
+/** Read news topics from ~/.siftly/news.txt (one per line, '#' comments). */
+export function readNewsTopics(): string[] {
+  let text: string;
+  try {
+    text = readFileSync(NEWS_TOPICS_PATH, "utf8");
+  } catch {
+    throw new Error(
+      `no news topics. Create ${NEWS_TOPICS_PATH} (one topic per line), or use: siftly x --news "<topic>"`,
+    );
+  }
+  const topics = text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !l.startsWith("#"));
+  if (!topics.length) throw new Error(`${NEWS_TOPICS_PATH} has no topics.`);
+  return topics;
 }
 
 /** Search Grok-curated news stories for a topic. */

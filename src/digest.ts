@@ -8,9 +8,9 @@ import type { Item } from "./types.ts";
 import { cached } from "./store/cache.ts";
 import { fetchTopStories } from "./sources/hackernews.ts";
 import { fetchAllFeeds, readFeedList } from "./sources/rss.ts";
-import { fetchTrendingDigest } from "./sources/x.ts";
+import { fetchNews, fetchTrendingDigest, readNewsTopics } from "./sources/x.ts";
 
-export type DigestSource = "hackernews" | "rss" | "x";
+export type DigestSource = "hackernews" | "rss" | "x" | "news";
 
 const ALIASES: Record<string, DigestSource> = {
   hn: "hackernews",
@@ -18,12 +18,14 @@ const ALIASES: Record<string, DigestSource> = {
   rss: "rss",
   x: "x",
   twitter: "x",
+  news: "news",
 };
 
 const LABELS: Record<DigestSource, string> = {
   hackernews: "Hacker News",
   rss: "RSS",
   x: "X — trending",
+  news: "X News",
 };
 
 const DEFAULT_SOURCES: DigestSource[] = ["hackernews", "rss"];
@@ -71,6 +73,19 @@ async function fetchOne(source: DigestSource, opts: DigestOptions): Promise<Item
       items = items.filter((i) => i.timestamp >= cutoff);
     }
     return items.slice(0, limit);
+  }
+
+  if (source === "news") {
+    const perTopic = await Promise.all(
+      readNewsTopics().map((topic) =>
+        cached(`x:news:q=${topic}:n=5`, "x", ttlSec, () => fetchNews(topic, { maxResults: 5 })),
+      ),
+    );
+    // Dedupe the same story surfaced by multiple topics, keep newest first.
+    const seen = new Set<string>();
+    const merged = perTopic.flat().filter((it) => (seen.has(it.id) ? false : (seen.add(it.id), true)));
+    merged.sort((a, b) => b.timestamp - a.timestamp);
+    return merged.slice(0, limit);
   }
 
   // x
