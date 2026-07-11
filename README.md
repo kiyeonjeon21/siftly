@@ -96,6 +96,15 @@ Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). npm
 - **YouTube** — [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) on your PATH (`brew install yt-dlp`). For the `--gemini` fallback, set `GEMINI_API_KEY`.
 - **X** — set `X_BEARER_TOKEN` (App-only Bearer). Reads need the Basic tier or higher; Free tier returns 403.
 
+**Defaults** — optional `~/.siftly/config.json` sets per-command defaults (CLI flags always win):
+
+```json
+{ "digest": { "sources": ["hn", "rss", "news"], "limit": 8 },
+  "hn": { "limit": 10, "comments": 15 },
+  "x": { "woeid": 1 }, "rss": { "limit": 20 },
+  "cache": { "ttlSec": 1800 } }
+```
+
 Put keys in a `.env` file (Bun auto-loads it; it's gitignored):
 
 ```bash

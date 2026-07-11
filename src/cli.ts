@@ -24,9 +24,11 @@ import { fetchAllFeeds, fetchFeed, readFeedList } from "./sources/rss.ts";
 import { fetchDigest, parseSources, type DigestSource } from "./digest.ts";
 import { parseVideoId } from "./util/youtube-url.ts";
 import { renderDigest, renderMarkdown } from "./render/markdown.ts";
+import { loadConfig } from "./config.ts";
 import type { Item } from "./types.ts";
 
-const DEFAULT_TTL_SEC = 30 * 60; // 30 min
+const cfg = loadConfig();
+const DEFAULT_TTL_SEC = cfg.cache?.ttlSec ?? 30 * 60; // 30 min (override: config cache.ttlSec)
 
 const USAGE = `siftly — pull content into agent-ready form, locally.
 
@@ -68,8 +70,8 @@ function fail(msg: string): never {
 }
 
 async function runHn(positionals: string[], flags: Record<string, unknown>) {
-  const limit = Number(flags.limit ?? 10);
-  const commentLimit = Number(flags.comments ?? 15);
+  const limit = Number(flags.limit ?? cfg.hn?.limit ?? 10);
+  const commentLimit = Number(flags.comments ?? cfg.hn?.comments ?? 15);
   const ttl = flags.refresh ? 0 : DEFAULT_TTL_SEC;
   const storyId = positionals[0];
 
@@ -159,7 +161,7 @@ async function runX(flags: Record<string, unknown>) {
       const item = await cached(`x:query:${q}:posts=${posts}`, "x", ttl, () => fetchTopic(q, posts));
       items = [item];
     } else {
-      const woeid = Number(flags.woeid ?? 1);
+      const woeid = Number(flags.woeid ?? cfg.x?.woeid ?? 1);
       const trendLimit = Number(flags.trends ?? 5);
       items = await cached(
         `x:trends:woeid=${woeid}:trends=${trendLimit}:posts=${posts}`,
@@ -193,7 +195,7 @@ function parseSince(s: string): number | null {
 
 async function runRss(positionals: string[], flags: Record<string, unknown>) {
   const ttl = flags.refresh ? 0 : DEFAULT_TTL_SEC;
-  const limit = Number(flags.limit ?? 20);
+  const limit = Number(flags.limit ?? cfg.rss?.limit ?? 20);
   const single = positionals[0];
 
   let items: Item[];
@@ -228,11 +230,13 @@ async function runRss(positionals: string[], flags: Record<string, unknown>) {
 
 async function runDigest(flags: Record<string, unknown>) {
   const ttl = flags.refresh ? 0 : DEFAULT_TTL_SEC;
-  const limit = Number(flags.limit ?? 8);
+  const limit = Number(flags.limit ?? cfg.digest?.limit ?? 8);
 
   let sources: DigestSource[];
   try {
-    sources = parseSources(typeof flags.sources === "string" ? flags.sources : undefined);
+    const sourcesArg =
+      typeof flags.sources === "string" ? flags.sources : cfg.digest?.sources?.join(",");
+    sources = parseSources(sourcesArg);
   } catch (err) {
     fail(err instanceof Error ? err.message : String(err));
   }
