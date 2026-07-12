@@ -102,6 +102,21 @@ and `vhs demo.tape` (or run the CLI tour live with [`./demo.sh`](demo.sh)). For 
 compelling clip, screen-record the same loop in the Claude Desktop UI
 (see [Use as an MCP server](#use-as-an-mcp-server)).
 
+## Install
+
+- **Homebrew** (macOS/Linux) — installs the binary and `yt-dlp`:
+  ```bash
+  brew install kiyeonjeon21/tap/siftly
+  ```
+- **Prebuilt binary** — download your platform's binary from [Releases](https://github.com/kiyeonjeon21/siftly/releases), then put it on your PATH:
+  ```bash
+  chmod +x siftly-* && mv siftly-* /usr/local/bin/siftly
+  ```
+- **Bun users** — run straight from GitHub, no install: `bunx github:kiyeonjeon21/siftly hn`
+- **From source** — see [Getting Started](#getting-started) below.
+
+**Keys are bring-your-own.** Hacker News, YouTube, and RSS work for free (YouTube needs `yt-dlp`, which Homebrew installs for you). **X needs your own paid API Bearer token** (Basic tier, ~$200/mo) in `X_BEARER_TOKEN`; the YouTube `--gemini` fallback needs a `GEMINI_API_KEY`. siftly itself never summarizes — your agent does.
+
 ## Getting Started
 
 Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). npm dependencies: `fast-xml-parser` (feed parsing) and, for the MCP server, `@modelcontextprotocol/sdk` + `zod`; everything else uses native `fetch`, `bun:sqlite`, and `util.parseArgs`. Per-source setup:
@@ -179,7 +194,9 @@ siftly also runs as a local [MCP](https://modelcontextprotocol.io) server, so an
 
 Tools: `siftly_digest`, `siftly_hackernews`, `siftly_youtube`, `siftly_x_news`, `siftly_x_search`, `siftly_rss` (each takes an optional `format: "markdown" | "json"`).
 
-**Claude Code** — a project-scoped `.mcp.json` is included; open the repo and approve the `siftly` server. It runs `bun run src/mcp.ts` with the repo as the working directory, so keys load from `.env`.
+The server is `siftly mcp` (stdio).
+
+**Claude Code** — a project-scoped `.mcp.json` is included; open the repo and approve the `siftly` server (it runs `bun run src/cli.ts mcp` with the repo as cwd, so keys load from `.env`).
 
 **Claude Desktop** — add to `claude_desktop_config.json` (keys go here since Desktop doesn't load `.env`):
 
@@ -187,17 +204,17 @@ Tools: `siftly_digest`, `siftly_hackernews`, `siftly_youtube`, `siftly_x_news`, 
 {
   "mcpServers": {
     "siftly": {
-      "command": "bun",
-      "args": ["run", "/absolute/path/to/siftly/src/mcp.ts"],
+      "command": "siftly",
+      "args": ["mcp"],
       "env": { "X_BEARER_TOKEN": "...", "GEMINI_API_KEY": "..." }
     }
   }
 }
 ```
 
-Then just ask: _"what's on Hacker News today?"_, _"summarize this YouTube video: <url>"_, or _"what's the X news on AI?"_ — the host calls siftly and summarizes.
+(If you run from source instead of an installed binary, use `"command": "bun", "args": ["run", "/abs/path/to/siftly/src/cli.ts", "mcp"]`.)
 
-> Local stdio suits a personal, single-user tool (it needs `yt-dlp`, the local cache, and your own API keys). Distributing it to others would mean packaging as an MCPB or a remote HTTP server.
+Then just ask: _"what's on Hacker News today?"_, _"summarize this YouTube video: <url>"_, or _"what's the X news on AI?"_ — the host calls siftly and summarizes.
 
 ## Project Structure
 
