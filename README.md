@@ -198,21 +198,25 @@ The server is `siftly mcp` (stdio).
 
 **Claude Code** — a project-scoped `.mcp.json` is included; open the repo and approve the `siftly` server (it runs `bun run src/cli.ts mcp` with the repo as cwd, so keys load from `.env`).
 
-**Claude Desktop** — add to `claude_desktop_config.json` (keys go here since Desktop doesn't load `.env`):
+**Claude Desktop** — add to `claude_desktop_config.json`. Desktop is a GUI app and does **not** inherit your shell `PATH`, so use the **absolute** path to `siftly` (run `which siftly`) and include a `PATH` env entry so it can find `yt-dlp`:
 
 ```json
 {
   "mcpServers": {
     "siftly": {
-      "command": "siftly",
+      "command": "/opt/homebrew/bin/siftly",
       "args": ["mcp"],
-      "env": { "X_BEARER_TOKEN": "...", "GEMINI_API_KEY": "..." }
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/bin:/bin",
+        "X_BEARER_TOKEN": "...",
+        "GEMINI_API_KEY": "..."
+      }
     }
   }
 }
 ```
 
-(If you run from source instead of an installed binary, use `"command": "bun", "args": ["run", "/abs/path/to/siftly/src/cli.ts", "mcp"]`.)
+`X_BEARER_TOKEN` / `GEMINI_API_KEY` are only needed for X and the YouTube `--gemini` fallback — HN, YouTube captions, and RSS need no keys. Restart Desktop after editing. (From source instead of a binary: `"command": "bun", "args": ["run", "/abs/path/to/siftly/src/cli.ts", "mcp"]` with the same `env`.)
 
 Then just ask: _"what's on Hacker News today?"_, _"summarize this YouTube video: <url>"_, or _"what's the X news on AI?"_ — the host calls siftly and summarizes.
 
