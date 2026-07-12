@@ -88,8 +88,11 @@ Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues) — e.
 
 ## Demo
 
-**From a coding agent** — with the siftly MCP server configured, just ask in natural language
-inside Claude Code; it calls siftly (you'll see `Called siftly`) and summarizes:
+**In Claude Desktop** — just ask in plain language and siftly is called for you; here it answers about Hacker News, a YouTube talk, and X in one session:
+
+https://github.com/user-attachments/assets/d21f0c3c-ab8d-4940-afc2-9e3c0b44f478
+
+**From Claude Code** — the same loop in the terminal (you'll see `Called siftly`):
 
 ![siftly from a coding agent](docs/agent.gif)
 
@@ -97,10 +100,7 @@ inside Claude Code; it calls siftly (you'll see `Called siftly`) and summarizes:
 
 ![siftly CLI](docs/demo.gif)
 
-Both GIFs are generated with [VHS](https://github.com/charmbracelet/vhs) — `vhs agent.tape`
-and `vhs demo.tape` (or run the CLI tour live with [`./demo.sh`](demo.sh)). For the most
-compelling clip, screen-record the same loop in the Claude Desktop UI
-(see [Use as an MCP server](#use-as-an-mcp-server)).
+The CLI GIFs are generated with [VHS](https://github.com/charmbracelet/vhs) — `vhs agent.tape` and `vhs demo.tape` (or run the tour live with [`./demo.sh`](demo.sh)).
 
 ## Install
 
