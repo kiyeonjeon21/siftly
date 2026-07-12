@@ -30,3 +30,29 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+
+      # Renders HomebrewFormula/siftly.rb into the tap repo with real version +
+      # sha256s. No-ops unless HOMEBREW_TAP_GITHUB_TOKEN (a PAT with write access
+      # to kiyeonjeon21/homebrew-tap) is set.
+      - name: Update Homebrew tap
+        env:
+          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_GITHUB_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          if [ -z "$TAP_TOKEN" ]; then echo "No tap token; skipping."; exit 0; fi
+          ver="${VERSION#v}"
+          sha() { awk -v f="siftly-$1" '$2==f{print $1}' dist/checksums.txt; }
+          sed -e "s/0.0.0/$ver/" \
+              -e "s/REPLACE_DARWIN_ARM64/$(sha darwin-arm64)/" \
+              -e "s/REPLACE_DARWIN_X64/$(sha darwin-x64)/" \
+              -e "s/REPLACE_LINUX_ARM64/$(sha linux-arm64)/" \
+              -e "s/REPLACE_LINUX_X64/$(sha linux-x64)/" \
+              HomebrewFormula/siftly.rb > rendered.rb
+          git clone "https://x-access-token:${TAP_TOKEN}@github.com/kiyeonjeon21/homebrew-tap.git" tap
+          mkdir -p tap/Formula
+          cp rendered.rb tap/Formula/siftly.rb
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/siftly.rb
+          git commit -m "siftly $ver" && git push || echo "no changes"
