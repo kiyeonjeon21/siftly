@@ -10,11 +10,11 @@
 
 Information sources are fragmented, and opening each one to read costs time. siftly brings that into one place.
 
-- **Hacker News** — today's top stories with their comment trees, ready to summarize _(implemented)_
-- **YouTube** — pull a video's transcript/captions from a URL
-- **X (Twitter)** — via the paid API: trending topics, topic search, and curated news stories (with the posts driving them)
+- **Hacker News** — today's top stories with their comment trees, ready to summarize
+- **YouTube** — a video's transcript/captions from a URL, or a channel's recent videos
+- **X (Twitter)** — via the paid API: trending topics, topic search, curated news, and a specific account's posts
 - **RSS / newsletters** — any RSS/Atom feed (blogs, Substack, …), merged newest-first
-- **Later** — Reddit and more as plugins
+- **Later** — Reddit and Threads (see the roadmap)
 
 Designed as a personal tool first, with an eye toward growing into a service if it proves useful.
 
@@ -62,20 +62,24 @@ siftly doesn't generate this — the consuming agent does, from the extracted co
 
 ## Roadmap
 
-Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues) — e.g. [#1 Support running as an MCP server in Claude Desktop](https://github.com/kiyeonjeon21/siftly/issues/1).
+Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues).
 
-- [x] **Phase 1 — Vertical slice (Hacker News)**
-  Whole pipeline end-to-end via the free Algolia HN API — front-page fetch, comment tree, SQLite cache, agent-ready markdown. No auth, no cost.
-- [x] **Phase 2 — YouTube transcript fetching**
-  Transcript + metadata via `yt-dlp` (the official Data API can't return third-party captions, and the unofficial endpoint is po_token-gated). Manual/auto caption selection, optional `[mm:ss]` timestamps.
-- [x] **Phase 3 — X ingestion**
-  Via the X API v2 (App-only Bearer, read-only). Trending digest + the most-engaged recent posts per trend, or a free-form topic search. Also YouTube's `--gemini` fallback for caption-less videos (Gemini REST, no SDK).
-- [x] **Phase 4 — RSS / newsletters**
-  RSS/Atom feeds from `~/.siftly/feeds.txt` (or a single URL), merged newest-first, with `--since` filtering. Newsletters that expose a feed (Substack `/feed`, …) come through the same path. Free, no auth.
-- [ ] **Phase 5 — Local web UI + thread expansion**
-  Follow a single topic across multiple sources.
-- [ ] **Phase 6 — Service**
-  Multi-user, auth, and billing considerations.
+**Shipped**
+
+- [x] **Sources** — Hacker News; YouTube (transcripts via `yt-dlp` + a Gemini fallback, plus channels); X (trends, topic search, curated news, user timelines); RSS / newsletters.
+- [x] **`digest`** — several sources pulled into one agent-ready document, deduped across sources.
+- [x] **MCP server** — call the sources as tools from Claude Desktop / Claude Code / Cursor ([#1](https://github.com/kiyeonjeon21/siftly/issues/1)).
+- [x] **Distribution** — `brew install`, prebuilt binaries, and a tag-triggered release + CI.
+
+**Next**
+
+- [ ] [Reddit source](https://github.com/kiyeonjeon21/siftly/issues/2) — subreddits + comment trees, like Hacker News.
+- [ ] [Threads source](https://github.com/kiyeonjeon21/siftly/issues/3) — pending a viable public read path (research first).
+
+**Later**
+
+- [ ] Local web UI — follow a single topic across sources.
+- [ ] Multi-user service (auth, billing).
 
 ## Source Constraints (reference)
 
@@ -227,6 +231,7 @@ src/
   cli.ts              # entry point + arg parsing (util.parseArgs)
   mcp.ts              # MCP server (stdio) exposing the sources as tools
   digest.ts           # multi-source orchestrator (siftly digest)
+  config.ts           # optional ~/.siftly/config.json defaults
   types.ts            # normalized Item / Comment
   sources/
     hackernews.ts     # Algolia HN API: fetch + normalize
@@ -246,6 +251,7 @@ test/
   x.test.ts           # fixture-based unit tests (no network)
   rss.test.ts         # fixture-based unit tests (no network)
   digest.test.ts      # fixture-based unit tests (no network)
+  config.test.ts      # fixture-based unit tests (no network)
 ```
 
 Run `bun test` for the unit tests and `bun run typecheck` for types.
