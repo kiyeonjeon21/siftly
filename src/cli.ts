@@ -47,6 +47,7 @@ Usage:
   siftly digest [options]        Several sources at once, one document
   siftly cache stats             Show cache size / entries per source
   siftly cache clear [source]    Empty the cache (optionally one source)
+  siftly mcp                     Run the MCP server (stdio) for Claude Desktop/Code
 
 Options:
   --sources LIST  digest: comma list of hn,rss,x,news (default hn,rss)
@@ -377,6 +378,11 @@ async function main() {
     case "cache":
       runCache(rest);
       break;
+    case "mcp": {
+      const { startMcpServer } = await import("./mcp.ts");
+      await startMcpServer();
+      break;
+    }
     default:
       fail(`unknown command "${command}"`);
   }

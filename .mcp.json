@@ -2,7 +2,7 @@
   "mcpServers": {
     "siftly": {
       "command": "bun",
-      "args": ["run", "src/mcp.ts"]
+      "args": ["run", "src/cli.ts", "mcp"]
     }
   }
 }

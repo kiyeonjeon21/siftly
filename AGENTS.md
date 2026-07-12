@@ -20,7 +20,7 @@ YouTube's optional `--gemini` transcription fallback for caption-less videos.
 bun run src/cli.ts <hn|yt|x|rss|digest|cache> [options]   # run the CLI
 bun run typecheck                                          # tsc --noEmit — must be clean
 bun test                                                   # offline fixture tests — must pass
-bun run src/mcp.ts                                         # the MCP server (stdio)
+bun run src/cli.ts mcp                                    # the MCP server (stdio)
 ```
 
 Always run `bun run typecheck` and `bun test` before committing.

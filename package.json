@@ -6,8 +6,7 @@
     "typescript": "^5"
   },
   "bin": {
-    "siftly": "src/cli.ts",
-    "siftly-mcp": "src/mcp.ts"
+    "siftly": "src/cli.ts"
   },
   "description": "Sift the signal from the noise. Pull content from multiple sources into agent-ready form, locally.",
   "scripts": {

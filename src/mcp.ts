@@ -234,4 +234,9 @@ tool(
   },
 );
 
-await server.connect(new StdioServerTransport());
+export async function startMcpServer(): Promise<void> {
+  await server.connect(new StdioServerTransport());
+}
+
+// Allow running this file directly (`bun run src/mcp.ts`) as well as via `siftly mcp`.
+if (import.meta.main) await startMcpServer();
