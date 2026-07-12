@@ -88,8 +88,8 @@ Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues) — e.
 
 ## Demo
 
-**From a coding agent** — with the siftly MCP server configured, you just ask in natural
-language and the agent calls siftly and summarizes:
+**From a coding agent** — with the siftly MCP server configured, just ask in natural language
+inside Claude Code; it calls siftly (you'll see `Called siftly`) and summarizes:
 
 ![siftly from a coding agent](docs/agent.gif)
 
