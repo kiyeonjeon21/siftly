@@ -88,7 +88,7 @@ Tracked in [GitHub Issues](https://github.com/kiyeonjeon21/siftly/issues).
 | Hacker News | Algolia HN API (free, no auth) | Low |
 | RSS / newsletters | Any RSS/Atom feed (free, no auth) | Low |
 | YouTube | `yt-dlp` captions, `--gemini` fallback (Gemini key) | Medium |
-| X (Twitter) | X API v2 Bearer (trends, search, curated news) — reads need Basic tier (~$200/mo) | High |
+| X (Twitter) | X API v2 Bearer (trends, search, curated news, timelines) — [pay-per-use](https://docs.x.com/x-api/getting-started/pricing) (~$0.005 per post read) | High |
 
 ## Demo
 
@@ -119,7 +119,7 @@ The CLI GIFs are generated with [VHS](https://github.com/charmbracelet/vhs) — 
 - **Bun users** — run straight from GitHub, no install: `bunx github:kiyeonjeon21/siftly hn`
 - **From source** — see [Getting Started](#getting-started) below.
 
-**Keys are bring-your-own.** Hacker News, YouTube, and RSS work for free (YouTube needs `yt-dlp`, which Homebrew installs for you). **X needs your own paid API Bearer token** (Basic tier, ~$200/mo) in `X_BEARER_TOKEN`; the YouTube `--gemini` fallback needs a `GEMINI_API_KEY`. siftly itself never summarizes — your agent does.
+**Keys are bring-your-own.** Hacker News, YouTube, and RSS work for free (YouTube needs `yt-dlp`, which Homebrew installs for you). **X needs your own API Bearer token** in `X_BEARER_TOKEN` — the X API is now [pay-per-use](https://docs.x.com/x-api/getting-started/pricing) (about $0.005 per post read, no monthly subscription), so you add billing and can set a spending limit. The YouTube `--gemini` fallback needs a `GEMINI_API_KEY`. siftly itself never summarizes — your agent does.
 
 ## Getting Started
 
@@ -129,7 +129,7 @@ Requires [Bun](https://bun.sh) (TypeScript runs directly — no build step). npm
 - **RSS** — list feed URLs in `~/.siftly/feeds.txt` (one per line, `#` comments), or pass one on the command line.
 - **X news in `digest`** — list topics in `~/.siftly/news.txt` (one per line); `digest --sources …,news` pulls curated stories for each.
 - **YouTube** — [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) on your PATH (`brew install yt-dlp`). For the `--gemini` fallback, set `GEMINI_API_KEY`.
-- **X** — set `X_BEARER_TOKEN` (App-only Bearer). Reads need the Basic tier or higher; Free tier returns 403.
+- **X** — set `X_BEARER_TOKEN` (App-only Bearer). The X API is [pay-per-use](https://docs.x.com/x-api/getting-started/pricing) now (~$0.005 per post read, no free tier); buy credits and set a spending limit in the developer console. siftly's cache — and X's own 24-hour read dedup — keep light personal use to pennies.
 
 **Defaults** — optional `~/.siftly/config.json` sets per-command defaults (CLI flags always win):
 
@@ -188,7 +188,7 @@ bun run src/cli.ts hn --refresh                 # bypass the 30-min cache
 
 Then paste the output into your coding agent (or have it run the command) and ask for a gist. Install globally with `bun link` to use `siftly` directly.
 
-> **X note:** the v2 recent-search API only covers the last ~7 days and can't sort by popularity on Basic tier, so siftly over-fetches and ranks by engagement client-side. For very active trends the top posts may still be low-engagement (seconds old) — `--query` gives better signal for a specific topic.
+> **X note:** the v2 recent-search API only covers the last ~7 days and can't sort by popularity, so siftly over-fetches and ranks by engagement client-side. For very active trends the top posts may still be low-engagement (seconds old) — `--query` gives better signal for a specific topic.
 
 Fetched results are cached in SQLite at `~/.siftly/siftly.db`, so re-runs are near-instant.
 
